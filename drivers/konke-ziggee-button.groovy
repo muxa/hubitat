@@ -1,7 +1,7 @@
 /**
  *  Konke Button
  *  Device Driver for Hubitat Elevation hub
- *  Version 0.1.1
+ *  Version 0.1.2
  *
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -93,7 +93,7 @@ private parseButtonMessage(attrValue) {
             break
         case "81": 
             attribute = "doubleTapped"
-            descr = "Button was double-tabbed"
+            descr = "Button was double-tapped"
             break
         case "82": 
             attribute = "held "
