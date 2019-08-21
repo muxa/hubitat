@@ -1,7 +1,7 @@
 /**
  *  Konke Button
  *  Device Driver for Hubitat Elevation hub
- *  Version 0.1.0
+ *  Version 0.1.1
  *
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -18,10 +18,10 @@
  */
 
 metadata {
-	definition (name: "Konke Button", namespace: "veeceeoh", author: "veeceeoh") {
+	definition (name: "Konke Button", namespace: "muxa", author: "Muxa") {
 		capability "PushableButton"
-		capability "HoldableButton"        
-		capability "Sensor"
+        capability "DoubleTapableButton"
+		capability "HoldableButton"
 		capability "Battery"
 
 		attribute "lastCheckinEpoch", "String"
@@ -83,43 +83,35 @@ def parse(String description) {
 
 // Parse button message (press, double-click, triple-click, quad-click, and release)
 private parseButtonMessage(attrValue) {
-	def clickType = ""
-	def coreType = "Unknown"
-    def value = 0
+	def attribute = ""
+    def button = 1
     def descr = ""
     switch (attrValue) {
         case "80": 
-            coreType = "Pressed"
-            clickType = "press"            
-            value = 1
+            attribute = "pushed"
             descr = "Button was pressed"
             break
         case "81": 
-            coreType = "Double"
-            clickType = "double"
-            value = 2
-            descr = "Button was double-clicked"
+            attribute = "doubleTapped"
+            descr = "Button was double-tabbed"
             break
         case "82": 
-            coreType = "Long"
-            clickType = "long"
-            value = 3
-            descr = "Button was long-pressed"
+            attribute = "held "
+            descr = "Button was held"
             break
         case "CD": 
-            coreType = "Reset"
-            clickType = "reset"
-            value = 4
-            descr = "Button has reset presset"
+            attribute = "pushed"
+            button = 2
+            descr = "Button has reset pressed"
             break
         default:
             return [:]
     }
-    updateDateTimeStamp(coreType)
+    updateDateTimeStamp("Pressed")
     
     return [
-			name: clickType,
-			value: value,
+			name: attribute,
+			value: button,
 			isStateChange: true,
 			descriptionText: descr
 		]
@@ -190,7 +182,7 @@ def installed() {
 // configure() runs after installed() when a sensor is paired or reconnected
 def configure() {
 	displayInfoLog("Configuring")
-	displayInfoLog("Number of buttons = 4")
+	displayInfoLog("Number of buttons = 2")
 	init()
 	state.prefsSetCount = 1
 	return
@@ -207,5 +199,5 @@ def updated() {
 def init() {
 	if (!device.currentState('batteryLastReplaced')?.value)
 		resetBatteryReplacedDate(true)
-	sendEvent(name: "numberOfButtons", value: 4)
+	sendEvent(name: "numberOfButtons", value: 2)
 }
