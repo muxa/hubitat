@@ -1,7 +1,7 @@
 /**
  *  Konke Button
  *  Device Driver for Hubitat Elevation hub
- *  Version 0.1.2
+ *  Version 0.1.3
  *
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -108,6 +108,7 @@ private parseButtonMessage(attrValue) {
             return [:]
     }
     updateDateTimeStamp("Pressed")
+    displayInfoLog(descr)
     
     return [
 			name: attribute,
