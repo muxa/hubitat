@@ -12,7 +12,7 @@ Use one master switch to control multiple linked switches.
 
 1. On the Hubitat hub, go to the _Apps Code_ page and click _+ New App_
 2. Copy and paste the contents of `master-switch.groovy` and _Save_
-3. Click _+ New App+ again
+3. Click _+ New App_ again
 4. Copy and paste the contents of `master-switch-instance.groovy` and click _Save_
 5. Go to the _Apps_ page, click _Add User App_, select _Master Switch_ and click _Done_
 
