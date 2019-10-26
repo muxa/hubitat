@@ -1,7 +1,7 @@
 /**
- *  Konke Button
+ *  Konke ZigBee Button
  *  Device Driver for Hubitat Elevation hub
- *  Version 0.1.4
+ *  Version 0.1.5
  *
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -18,7 +18,7 @@
  */
 
 metadata {
-	definition (name: "Konke Button", namespace: "muxa", author: "Muxa") {
+	definition (name: "Konke ZigBee Button", namespace: "muxa", author: "Mikhail Diatchenko") {
 		capability "PushableButton"
         capability "DoubleTapableButton"
 		capability "HoldableButton"
@@ -31,8 +31,6 @@ metadata {
 		attribute "buttonPressedTime", "String"
 		attribute "buttonHeldEpoch", "String"
 		attribute "buttonHeldTime", "String"
-		attribute "buttonReleasedEpoch", "String"
-		attribute "buttonReleasedTime", "String"
 
 		fingerprint endpointId: "01", profileId: "0104", deviceId: "0104", inClusters: "0000,0001,0003,0004,0005,0006", outClusters: "0003", manufacturer: "Konke", model: "3AFE170100510001"
 
@@ -118,7 +116,7 @@ private parseButtonMessage(attrValue) {
 		]
 }
 
-// Generate buttonPressedEpoch/Time, buttonHeldEpoch/Time, or buttonReleasedEpoch/Time event for Epoch time/date app or Hubitat dashboard use
+// Generate buttonPressedEpoch/Time or buttonHeldEpoch/Time event for Epoch time/date app or Hubitat dashboard use
 def updateDateTimeStamp(timeStampType) {
 	displayDebugLog("Setting button${timeStampType}Epoch and button${timeStampType}Time to current date/time")
 	sendEvent(name: "button${timeStampType}Epoch", value: now(), descriptionText: "Updated button${timeStampType}Epoch")
