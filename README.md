@@ -1,7 +1,7 @@
 # Custom Apps for Hubitat
 
 * [Master Switch](apps/master-switch) - use one master switch to control multiple linked switches
-* [Light Flasher](apps/light-flasher) - kake lights flash
+* [Light Flasher](apps/light-flasher) - make lights flash
 
 # Custom Drivers for Hubitat
 
