@@ -7,3 +7,4 @@
 
 * ~~Zemismart ZigBee Wall Switch 2 Gang~~ - obsolete, use built-in _Nue ZigBee Driver_
 * [Konke Zigbee Button](drivers/konke-ziggee-button.groovy) - this driver has been in use since 24 of August 2019 with not a single issue noticed.
+* [Heiman Zigbee Key Fob](drivers/heiman-zigbee-key-fob.groovy) - also know as "Heiman Smart Remote Controller" ![Heiman Zigbee Key Fob](./images/heiman-zigbee-key-fob.png).
