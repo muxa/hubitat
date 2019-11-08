@@ -143,7 +143,7 @@ def resetBatteryReplacedDate(paired) {
 }
 
 def identify() {
-    displayDebugLog("Sending Identify command to beep the sensor for 5 seconds")
+    displayDebugLog("Sending Identify command to flash device light for 5 seconds")
     return zigbee.command(0x0003, 0x00, "0500")
 }
 
