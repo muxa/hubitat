@@ -127,13 +127,6 @@ def initialize() {
 	app.updateLabel(nameOverride)
 	
 	state.currentScene = 0 // off
-	state.sceneCount = 1
-	if (switches2 && switches2.size() > 0) {
-		state.sceneCount++
-	}
-	if (switches3 && switches3.size() > 0) {
-		state.sceneCount++
-	}
 	setupSubscriptions()
 
 	log "Initialised ${nameOverride}"
@@ -141,6 +134,8 @@ def initialize() {
 
 def getNextScene() {
 	switch (state.currentScene) {
+		case -1:
+			return 0
 		case 0:
 			return 1
 		case 1:
@@ -244,7 +239,9 @@ def linkedSwitchHandler(evt) {
 			}
 		}
     } else if (sceneSwitch.currentValue("switch") == "off") {
-		log "Turning scene switch on" // because one of the linked switched switched on
+		state.currentScene = -1
+		log "Scene override. Turning scene switch on" // because one of the linked switched switched on
+		// TODO: detect scene
 		bypassSceneSwitchSubscription {
 			sceneSwitch.on()
 		}
@@ -264,7 +261,7 @@ def bypassSceneSwitchSubscription(Closure callback) {
 	callback();
 
 	// restore subscription
-    runInMillis(500, 'setupSceneSwitchesSubscription')
+    runInMillis(500, 'setupSceneSwitchSubscription')
 }
 
 def bypassLinkedSwitchesSubscription(Closure callback) {
@@ -284,11 +281,11 @@ def bypassLinkedSwitchesSubscription(Closure callback) {
 }
 
 def setupSubscriptions() {
-    setupSceneSwitchesSubscription()
+    setupSceneSwitchSubscription()
     setupLinkedSwitchesSubscription()
 }
 
-def setupSceneSwitchesSubscription() {
+def setupSceneSwitchSubscription() {
     log "(Re)subscribe to scene switch events"
     
     subscribe(sceneSwitch, "switch", sceneSwitchHandler)    
