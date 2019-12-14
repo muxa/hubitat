@@ -9,7 +9,7 @@ Use one switch to toggle scenes.
 
 Usage example:
 
-* Use a downstairs switch (dummy switch, not controlling any light) to be able to switch off all lights upstairs, and turn on only a sybset of those lights
+* Use a downstairs switch (dummy switch, not wired to any light) to be able to switch off all lights upstairs, and turn on only a subset of those lights
 
 ## App Installation
 
