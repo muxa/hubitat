@@ -1,5 +1,6 @@
 # Custom Apps for Hubitat
 
+* [Scene Switch](apps/scene-switch) - use one switch to toggle scenes
 * [Master Switch](apps/master-switch) - use one master switch to control multiple linked switches
 * [Light Flasher](apps/light-flasher) - make lights flash
 
