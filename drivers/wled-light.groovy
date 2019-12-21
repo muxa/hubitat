@@ -1,7 +1,7 @@
 /*
  * WLED Light 
  *  Device Driver for Hubitat Elevation hub
- *  Version 1.0.0
+ *  Version 1.0.1
  *
  * Allows keeping device status in sync with WLED light (https://github.com/Aircoookie/WLED) and controlling it via MQTT broker.
  * Presence will update to 'not present' if connection to MQTT broker is not established.
@@ -388,7 +388,7 @@ def initialize() {
     logDebug "Initialize"
     try {
         // open connection
-        alphaV1mqttConnect(device, "tcp://" + settings.mqttBroker, "hubitat_wled_driver", null, null)
+        alphaV1mqttConnect(device, "tcp://" + settings.mqttBroker, "hubitat_wled_${device.id}", null, null)
         // subscribe once received connection succeeded status update below
     } catch(e) {
         log.error "MQTT Initialize error: ${e.message}."
