@@ -1,7 +1,7 @@
 /*
  * WLED Light 
  *  Device Driver for Hubitat Elevation hub
- *  Version 1.0.1
+ *  Version 1.0.2
  *
  * Allows keeping device status in sync with WLED light (https://github.com/Aircoookie/WLED) and controlling it via MQTT broker.
  * Presence will update to 'not present' if connection to MQTT broker is not established.
@@ -108,8 +108,7 @@ import groovy.transform.Field
 metadata {
     definition (name: "WLED Light", namespace: "muxa", author: "Mikhail Diatchenko") {
         capability "Configuration"
-        capability "Actuator"        
-        capability "Refresh"
+        capability "Actuator"
         capability "Switch"
         capability "SwitchLevel"
         capability "Light"
@@ -389,11 +388,17 @@ def initialize() {
     try {
         // open connection
         alphaV1mqttConnect(device, "tcp://" + settings.mqttBroker, "hubitat_wled_${device.id}", null, null)
-        // subscribe once received connection succeeded status update below
+        // subscribe once received connection succeeded status update below        
     } catch(e) {
         log.error "MQTT Initialize error: ${e.message}."
         delayedInitialise()
     }
+}
+
+def subscribe() {
+    alphaV1mqttSubscribe(device, settings.mqttTopic + "/v") // Contains XML API response (same as HTTP API)
+    logDebug "Subscribed to topic ${settings.mqttTopic}/v"
+    sendEvent(name: "presence", value: "present", descriptionText: "MQTT connected", isStateChange: true)
 }
 
 def mqttClientStatus(String status){
@@ -423,9 +428,9 @@ def mqttClientStatus(String status){
             switch (parts[1]) {
                 case 'Connection succeeded':
                     state.connected = true
-                    alphaV1mqttSubscribe(device, settings.mqttTopic + "/v") // Contains XML API response (same as HTTP API)
-                    logDebug "Subscribed to topic ${settings.mqttTopic}/v"
-                    sendEvent(name: "presence", value: "present", descriptionText: "MQTT connected", isStateChange: true)
+                    // without this delay the `parse` method is never called
+                    // (it seems that there needs to be some delay after cinnection to subscribe)
+                    runInMillis(100, subscribe)
                     break
             }
             break
