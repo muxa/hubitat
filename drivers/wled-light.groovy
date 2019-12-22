@@ -1,7 +1,7 @@
 /*
  * WLED Light 
  *  Device Driver for Hubitat Elevation hub
- *  Version 1.0.2
+ *  Version 1.0.3
  *
  * Allows keeping device status in sync with WLED light (https://github.com/Aircoookie/WLED) and controlling it via MQTT broker.
  * Presence will update to 'not present' if connection to MQTT broker is not established.
@@ -138,13 +138,6 @@ preferences {
     }
 }
 
-import static hubitat.helper.InterfaceUtils.alphaV1mqttConnect
-import static hubitat.helper.InterfaceUtils.alphaV1mqttDisconnect
-import static hubitat.helper.InterfaceUtils.alphaV1mqttSubscribe
-import static hubitat.helper.InterfaceUtils.alphaV1mqttUnsubscribe
-import static hubitat.helper.InterfaceUtils.alphaV1parseMqttMessage
-import static hubitat.helper.InterfaceUtils.alphaV1mqttPublish
-
 def installed() {
     def effectMap = lightEffects.collect { element, index ->
       [(index): element] 
@@ -171,7 +164,7 @@ def xmlToMap(xml) {
 }
 
 def parse(String description) {
-    def mqtt = alphaV1parseMqttMessage(description) 
+    def mqtt = interfaces.mqtt.parseMessage(description) 
     
     def xml = new XmlSlurper().parseText(mqtt.payload)
     def map = xmlToMap(xml)
@@ -315,7 +308,7 @@ def setLevel(value) {
 
 def publishCommand(command) {
     logDebug "Publish ${settings.mqttTopic}/api&${command}"
-    alphaV1mqttPublish(device, settings.mqttTopic + "/api", command)
+    interfaces.mqtt.publish(settings.mqttTopic + "/api", command)
 }
 
 def setGenericName(hue){
@@ -371,8 +364,8 @@ def reconnect() {
 def disconnect() {
     if (state.connected) {
         log.info "Disconnecting from MQTT"
-        alphaV1mqttUnsubscribe(device, settings.mqttTopic + "/v")
-        alphaV1mqttDisconnect(device)
+        interfaces.mqtt.unsubscribe(settings.mqttTopic + "/v")
+        interfaces.mqtt.disconnect()
     }
 }
 
@@ -387,7 +380,7 @@ def initialize() {
     logDebug "Initialize"
     try {
         // open connection
-        alphaV1mqttConnect(device, "tcp://" + settings.mqttBroker, "hubitat_wled_${device.id}", null, null)
+        interfaces.mqtt.connect("tcp://" + settings.mqttBroker, "hubitat_wled_${device.id}", null, null)
         // subscribe once received connection succeeded status update below        
     } catch(e) {
         log.error "MQTT Initialize error: ${e.message}."
@@ -396,7 +389,7 @@ def initialize() {
 }
 
 def subscribe() {
-    alphaV1mqttSubscribe(device, settings.mqttTopic + "/v") // Contains XML API response (same as HTTP API)
+    interfaces.mqtt.subscribe(settings.mqttTopic + "/v") // Contains XML API response (same as HTTP API)
     logDebug "Subscribed to topic ${settings.mqttTopic}/v"
     sendEvent(name: "presence", value: "present", descriptionText: "MQTT connected", isStateChange: true)
 }
