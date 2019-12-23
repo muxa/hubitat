@@ -1,7 +1,7 @@
 /*
  * WLED Light 
  *  Device Driver for Hubitat Elevation hub
- *  Version 1.0.3
+ *  Version 1.0.4
  *
  * Allows keeping device status in sync with WLED light (https://github.com/Aircoookie/WLED) and controlling it via MQTT broker.
  * Presence will update to 'not present' if connection to MQTT broker is not established.
@@ -191,7 +191,7 @@ def parse(String description) {
     */    
    
     // convert 0..255 level to 0..100 level
-    level = Math.round(map.ac.toInteger() / 254 * 100)
+    level = Math.round(map.ac.toInteger() / 255 * 100)
     if (level > 0) {
         sendEvent(name: "switch", value: "on")
     } else {
