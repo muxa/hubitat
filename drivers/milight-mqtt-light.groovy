@@ -100,7 +100,7 @@ def on() {
 }
 
 def off() {
-    logInfo "Fff"
+    logInfo "Off"
     publishCommand([ "status": "off" ])
 }
 
@@ -111,17 +111,17 @@ def setColor(value) {
 
 def setHue(value) {
     logDebug "Set Hue $value"
-    publishCommand([ "hue": Math.round(value.hue * 3.6) ])
+    publishCommand([ "hue": Math.round(value * 3.6) ])
 }
 
 def setSaturation(value) {
     logDebug "Set Saturation $value"
-    publishCommand([ "saturation": value.saturation ])
+    publishCommand([ "saturation": value ])
 }
 
 def setLevel(value) {
     logInfo "Set Level $value"
-    publishCommand([ "level": value.level ])
+    publishCommand([ "level": value ])
 }
 
 def setGenericName(int hue){
