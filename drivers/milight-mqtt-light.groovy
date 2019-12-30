@@ -17,15 +17,33 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  */
+
+import groovy.transform.Field
+
+@Field static List lightEffects = [
+    "Rainbow",
+    "White Breathe",
+    "RGBW Breathe",
+    "RGBW Cycle",
+    "Color Cycle",
+    "Red Alert",
+    "Green Alert",
+    "Blue Alert",
+    "Loop All Effects"
+]
+
 metadata {
     definition (name: "MiLight MQTT Light", namespace: "muxa", author: "Mikhail Diatchenko") {
         capability "Actuator"
         capability "Switch"
         capability "SwitchLevel"
         capability "Light"
+        capability "LightEffects"
         capability "ColorControl"
         
         command "reconnect"
+
+        attribute "effectNumber", "number"
     }
 }
 
@@ -39,6 +57,12 @@ preferences {
 }
 
 def installed() {
+    def effectMap = lightEffects.collect { element, index ->
+      [(index): element] 
+    }
+    def le = new groovy.json.JsonBuilder(lightEffects)
+    sendEvent(name:"lightEffects",value:le)
+
     log.info "Installed..."
 }
 
@@ -70,6 +94,17 @@ def parse(String description) {
         def hue = json.hue.toInteger()
         sendEvent(name: "hue", value:  Math.round(hue / 3.6), isStateChange: true)
         setGenericName(hue)
+        effectOff()
+    }
+
+    if (json.mode >= 0) {
+        // effect changed
+        def effectIndex = json.mode.toInteger()
+        def effectName = lightEffects[effectIndex]
+        def descr = "Effect was set to ${effectName} (${effectIndex})"
+        logDebug "${descr}"
+        sendEvent(name:"effectNumber", value:effectIndex, descriptionText: descr)
+        sendEvent(name:"effectName", value:effectName, descriptionText: descr)
     }
     
     switch (state.type) {
@@ -91,6 +126,7 @@ def parse(String description) {
                     def colorName = 'White'
                     logDebug "${device.getDisplayName()} color is ${colorName}"
                     sendEvent(name: "colorName", value: colorName)
+                    effectOff()
                     break
             }
     
@@ -100,6 +136,16 @@ def parse(String description) {
             break
     }
 }
+
+private def effectOff(){
+    if (device.currentValue("effectNumber") < 0) 
+        return
+
+    def descr = "Effect was turned off"
+    logDebug "${descr}"
+    sendEvent(name:"effectNumber", value:-1, descriptionText: descr)
+    sendEvent(name:"effectName", value:"", descriptionText: descr)
+} 
 
 def on() {
     logInfo "On"
@@ -129,6 +175,33 @@ def setSaturation(value) {
 def setLevel(value) {
     logInfo "Set Level $value"
     publishCommand([ "level": value ])
+}
+
+def setEffect(String effect){
+    logInfo "Set Effect $effect"
+    def index = lightEffects.indexOf(effect)
+    if (index >= 0) setEffect(index)
+}
+
+def setEffect(id){
+    logInfo "Set Effect $id"
+    publishCommand([ "mode": id ])
+} 
+
+def setNextEffect(){
+    def currentEffectId = device.currentValue("effectNumber") ?: 0
+    currentEffectId++
+    if (currentEffectId >= lightEffects.size()) 
+        currentEffectId = 0
+    setEffect(currentEffectId)
+}
+
+def setPreviousEffect(){
+    def currentEffectId = device.currentValue("effectNumber") ?: 0
+    currentEffectId--
+    if (currentEffectId < 0) 
+        currentEffectId = lightEffects.size() - 1
+    setEffect(currentEffectId)
 }
 
 def setGenericName(int hue){
