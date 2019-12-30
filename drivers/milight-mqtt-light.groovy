@@ -1,9 +1,12 @@
 /*
  * ESP8266 MiLight Hub MQTT Light
  *  Device Driver for Hubitat Elevation hub
- *  Version 1.0.0
+ *  Version 1.1.0
  *
  * Controls a single RGB light using MiLight Hub (https://github.com/sidoh/esp8266_milight_hub) via MQTT broker.
+ *
+ * KNOWN ISSUES:
+ * - Master On/Off (group 0) does not trigger event for groups 1-4
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -47,6 +50,10 @@ def parse(String description) {
 	
 	json = new groovy.json.JsonSlurper().parseText(mqtt.payload)
 	logDebug json
+
+    if (state.check > 0) {
+        state.check++
+    }
     
     if (json.state == "OFF") {
         sendEvent(name: "switch", value: "off")
@@ -220,6 +227,31 @@ def subscribe() {
     logDebug "Subscribed to topic ${settings.mqttUpdatesTopic}"
     
     // sendEvent(name: "presence", value: "present", descriptionText: "MQTT connected", isStateChange: true)
+
+    runIn(3, beginCheck)
+}
+
+def beginCheck() {
+    // check connection
+    // 1. turn light on
+    // 2. turn light off
+    // 3. if not received any MQTT messages reconnect
+    state.check = 1
+    on()
+    runIn(3, checkConnection)  
+}
+
+def checkConnection() {
+    if (state.check == 1) {
+        // check started but not completed. reconnect
+        log.warn 'Light not reacting'
+        state.remove('check')
+        delayedInitialise()
+    } else if (state.check > 1) {
+        state.remove('check')
+        off()    
+        log.info 'Light check completed'
+    }
 }
 
 def mqttClientStatus(String status){
