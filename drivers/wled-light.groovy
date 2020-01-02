@@ -4,7 +4,6 @@
  *  Version 1.0.4
  *
  * Allows keeping device status in sync with WLED light (https://github.com/Aircoookie/WLED) and controlling it via MQTT broker.
- * Presence will update to 'not present' if connection to MQTT broker is not established.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -114,7 +113,6 @@ metadata {
         capability "Light"
         capability "LightEffects"
         capability "ColorControl"
-        capability "PresenceSensor"
 		
         command "on"
         command "off"
@@ -391,7 +389,7 @@ def initialize() {
 def subscribe() {
     interfaces.mqtt.subscribe(settings.mqttTopic + "/v") // Contains XML API response (same as HTTP API)
     logDebug "Subscribed to topic ${settings.mqttTopic}/v"
-    sendEvent(name: "presence", value: "present", descriptionText: "MQTT connected", isStateChange: true)
+    state.connected = true
 }
 
 def mqttClientStatus(String status){
@@ -404,13 +402,11 @@ def mqttClientStatus(String status){
             switch (parts[1]) {
                 case 'Connection lost':
                     state.connected = false
-                    sendEvent(name: "presence", value: "not present", descriptionText: "MQTT disconnected")
                     state.delay = 0
                     delayedInitialise()
                     break
                 case 'send error':
                     state.connected = false
-                    sendEvent(name: "presence", value: "not present", descriptionText: "MQTT disconnected")
                     state.delay = 0
                     delayedInitialise()
                     break
