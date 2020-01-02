@@ -212,7 +212,7 @@ def parse(String description) {
     if (effectIndex != device.currentValue("effectNumber")) {
         // effect changed
         def effectName = lightEffects[effectIndex]
-        def descr = "Effect was was set to ${effectName} (${effectIndex})"
+        def descr = "Effect was set to ${effectName} (${effectIndex})"
         logInfo "${descr}"
         sendEvent(name:"effectNumber", value:effectIndex, descriptionText: descr)
         sendEvent(name:"effectName", value:effectName, descriptionText: descr)
