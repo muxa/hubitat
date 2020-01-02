@@ -415,11 +415,10 @@ def mqttClientStatus(String status){
         case 'Status':
             log.info "MQTT ${status}"
             switch (parts[1]) {
-                case 'Connection succeeded':
-                    state.connected = true
+                case 'Connection succeeded':                    
                     // without this delay the `parse` method is never called
-                    // (it seems that there needs to be some delay after cinnection to subscribe)
-                    runInMillis(100, subscribe)
+                    // (it seems that there needs to be some delay after connection to subscribe)
+                    runInMillis(1000, subscribe)
                     break
             }
             break
