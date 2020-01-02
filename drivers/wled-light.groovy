@@ -106,7 +106,7 @@ import groovy.transform.Field
 ]
 
 metadata {
-    definition (name: "WLED Light", namespace: "muxa", author: "Mikhail Diatchenko") {
+    definition (name: "WLED MQTT Light", namespace: "muxa", author: "Mikhail Diatchenko") {
         capability "Configuration"
         capability "Actuator"
         capability "Switch"
