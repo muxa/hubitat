@@ -64,10 +64,10 @@ def parse(String description) {
     }    
     
     if (json.hue >= 0) {
-        def hue = json.hue.toInteger()
+        def hue = json.hue.toInteger()        
         sendChildEvent(groupIndex, [name: "hue", value:  Math.round(hue / 3.6), descriptionText: "Hue set to ${hue}"])
-        setGenericName(hue)
         sendChildEvent(groupIndex, [name: "saturation", value: 100, unit: "%", descriptionText: "Saturation set to 100%"])
+        setGenericName(hue, groupIndex)
     }
     
     switch (json.command) {
@@ -142,7 +142,7 @@ def setLevel(value) {
     publishCommand(0, [ "level": value ])
 }
 
-def setGenericName(int hue){
+def setGenericName(int hue, int groupIndex){
     def colorName
     switch (hue){
         case 0..15: colorName = "Red"
@@ -173,7 +173,7 @@ def setGenericName(int hue){
             break
     }
     logDebug "${device.getDisplayName()} color is ${colorName}"
-    sendEvent(name: "colorName", value: colorName)
+    sendChildEvent(groupIndex, [name: "colorName", value: colorName])
 }
 
 def publishCommand(groupIndex, command) {
