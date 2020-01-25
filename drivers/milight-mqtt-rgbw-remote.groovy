@@ -37,7 +37,7 @@ preferences {
 }
 
 def installed() {
-    log.info "Installed..."
+    logDebug "Installed"
 }
 
 def parse(String description) {
@@ -249,50 +249,48 @@ def createChildDevices(int buttons) {
 }
 
 def updated() {
-    log.info "Updated..."
-    
-    initialize()    
-
-    createChildDevices(4)
-}
-
-def uninstalled() {
-    disconnect()
-}
-
-def reconnect() {
-    disconnect()
+    logDebug "Updated"
     initialize()
 }
 
-def disconnect() {
-    if (state.connected) {
-        log.info "Disconnecting from MQTT"
-        interfaces.mqtt.unsubscribe(settings.mqttUpdatesTopic+'/#')
-        interfaces.mqtt.disconnect()
-    }
+def uninstalled() {
+    logDebug "Uninstalled"
+    disconnect()
 }
 
-def delayedInitialise() {
+def disconnect() {
+    log.info "Disconnecting from MQTT"
+    interfaces.mqtt.unsubscribe(settings.mqttUpdatesTopic+'/#')
+    interfaces.mqtt.disconnect()
+}
+
+def delayedConnect() {
     // increase delay by 5 seconds every time, to max of 1 hour
     if (state.delay < 3600)
         state.delay = (state.delay ?: 0) + 5
-    // if (state.delay > 3600)
-    //     state.delay = 3600
 
     logDebug "Reconnecting in ${state.delay}s"
-    runIn(state.delay, initialize)
+    runIn(state.delay, connect)
 }
 
 def initialize() {
     logDebug "Initialize"
+
+    createChildDevices(4)
+
+    state.delay = 0
+    connect()
+}
+
+def connect() {
     try {
         // open connection
+        log.info "Connecting to ${settings.mqttBroker}"
         interfaces.mqtt.connect("tcp://" + settings.mqttBroker, "hubitat_milight_${device.id}", null, null)
         // subscribe once received connection succeeded status update below        
     } catch(e) {
-        log.error "MQTT Initialize error: ${e.message}."
-        delayedInitialise()
+        log.error "MQTT Connect error: ${e.message}."
+        delayedConnect()
     }
 }
 
@@ -310,14 +308,9 @@ def mqttClientStatus(String status){
             log.warn status
             switch (parts[1]) {
                 case 'Connection lost':
-                    state.connected = false
-                    state.delay = 0
-                    delayedInitialise()
-                    break
                 case 'send error':
-                    state.connected = false
                     state.delay = 0
-                    delayedInitialise()
+                    delayedConnect()
                     break
             }
             break
