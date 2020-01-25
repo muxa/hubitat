@@ -296,36 +296,6 @@ def setThermostatMode(thermostatmode) {
     }
 }
 
-def setSpeed(fanspeed) {
-    logInfo "Setting fan speed to ${fanspeed}"
-    switch (fanspeed) {
-        case "low":
-            publishCommand([ "fan": "QUIET" ])
-            break
-        case "medium-low":
-            publishCommand([ "fan": "1" ])
-            break
-        case "medium":
-            publishCommand([ "fan": "2" ])
-            break
-        case "medium-high":
-            publishCommand([ "fan": "3" ])
-            break
-        case "high":
-            publishCommand([ "fan": "4" ])
-            break
-        case "on":
-            publishCommand([ "power": "ON" ])
-            break
-        case "off":
-            publishCommand([ "power": "OFF" ])
-            break
-        case "auto":
-            publishCommand([ "fan": "AUTO" ])
-            break
-    }
-}
-
 def publishCommand(command) {
     logDebug "Publish ${settings.mqttTopic} ${command}"
     def json = new groovy.json.JsonBuilder(command).toString()
