@@ -1,6 +1,9 @@
 /*
- * ESP8266 Heatpump control (https://github.com/SwiCago/HeatPump) MQTT driver
- * (Work in progress)
+ * Mitsubishi Air Conditioner MQTT
+ *  Device Driver for Hubitat Elevation hub
+ * (Work in Progress)
+ * 
+ * Control Mitsubishi AC via MQTT using ESP8266 (https://github.com/SwiCago/HeatPump)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -12,7 +15,7 @@
  *  for the specific language governing permissions and limitations under the License.
  */
 metadata {
-    definition (name: "MQTT Heatpump", namespace: "muxa", author: "Mikhail Diatchenko") {
+    definition (name: "Mitsubishi AC MQTT", namespace: "muxa", author: "Mikhail Diatchenko") {
         capability "Initialize"
         capability "Sensor"
         capability "Thermostat"
