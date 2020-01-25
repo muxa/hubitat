@@ -1,7 +1,7 @@
 /*
  * Mitsubishi Air Conditioner MQTT
  *  Device Driver for Hubitat Elevation hub
- * (Work in Progress)
+ *  Version 1.0.0
  * 
  * Control Mitsubishi AC via MQTT using ESP8266 (https://github.com/SwiCago/HeatPump)
  *
@@ -19,7 +19,6 @@ metadata {
         capability "Initialize"
         capability "Sensor"
         capability "Thermostat"
-        capability "FanControl"
     }
 }
 
@@ -35,15 +34,6 @@ preferences {
 }
 
 import groovy.transform.Field
-
-@Field static Map heatpumpFanToHubitatFanSpeed = [
-    "QUIET": "low",
-    "1": "medium-low",
-    "2": "medium",
-    "3": "medium-high",
-    "4": "high",
-    "AUTO": "auto"
-] // supported enums: ["low","medium-low","medium","medium-high","high","on","off","auto"]
 
 @Field static Map heatpumpFanToHubitatFanMode = [
     "QUIET": "circulate",
@@ -146,22 +136,18 @@ def parse(String description) {
                 case "OFF":
                     events.thermostatMode = [name: "thermostatMode", value: "off"]                    
                     events.thermostatOperatingState = [name: "thermostatOperatingState", value: "idle"]
-                    
-                    events.speed = [name: "speed", value: "off"]
                     break
                 case "ON":
                     events.thermostatFanMode = [name: "thermostatFanMode", value: heatpumpFanToHubitatFanMode[json.fan]]
                     if (!events.thermostatOperatingState) {
                         events.thermostatOperatingState = [name: "thermostatOperatingState", value: heatpumpModeToHubitatOperatingState[json.mode]]
                     }
-                    events.speed = [name: "speed", value: heatpumpFanToHubitatFanSpeed[json.fan]]
                     break
             }
         }
         
         if (previousStatus?.fan != json.fan) {            
             events.thermostatFanMode = [name: "thermostatFanMode", value: heatpumpFanToHubitatFanMode[json.fan]]
-            events.speed = [name: "speed", value: heatpumpFanToHubitatFanSpeed[json.fan]]
         }
     }
 
