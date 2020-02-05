@@ -18,6 +18,7 @@ metadata {
     definition (name: "Mitsubishi AC MQTT", namespace: "muxa", author: "Mikhail Diatchenko") {
         capability "Initialize"
         capability "Sensor"
+        capability "TemperatureMeasurement"
         capability "Thermostat"
     }
 }
