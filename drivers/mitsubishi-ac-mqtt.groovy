@@ -109,7 +109,7 @@ def parse(String description) {
         // "|"    /* Air direction (horizontal): <<, <, |, >, >>, <>, or SWING */
 
         if (previousStatus?.temperature != json.temperature) {
-            def temp = (location.temperature == "F") ? ((json.temperature * 1.8) + 32) : json.temperature
+            def temp = convertCelciusToLocalTemp(json.roomTemperature)
             switch (json.mode) {
                 case 'HEAT':
                     if (device.currentValue("heatingSetpoint") != temp) {
