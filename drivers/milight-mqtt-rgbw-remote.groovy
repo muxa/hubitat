@@ -123,17 +123,17 @@ def off() {
 }
 
 def setColor(value) {
-    logDebug "Set Color $value"
+    logInfo "Set Color $value"
     publishCommand(0, [ "hue": Math.round(value.hue * 3.6), "saturation": value.saturation, "level": value.level ])
 }
 
 def setHue(value) {
-    logDebug "Set Hue $value"
+    logInfo "Set Hue $value"
     publishCommand(0, [ "hue": Math.round(value * 3.6) ])
 }
 
 def setSaturation(value) {
-    logDebug "Set Saturation $value"
+    logInfo "Set Saturation $value"
     publishCommand(0, [ "saturation": value ])
 }
 
@@ -141,6 +141,32 @@ def setLevel(value) {
     logInfo "Set Level $value"
     publishCommand(0, [ "level": value ])
 }
+
+def setWhite() {
+    logInfo "Set to White"
+    publishCommand(0, [ "command": "set_white" ])
+}
+
+def setNight() {
+    logInfo "Set to Night Mode"
+    publishCommand(0, [ "command": "night_mode" ])
+}
+
+def setEffectSpeedUp() {
+    logInfo "Increase effect speed"
+    publishCommand(0, [ "command": "mode_speed_up" ])
+}
+
+def setEffectSpeedDown() {
+    logInfo "Decrease effect speed"
+    publishCommand(0, [ "command": "mode_speed_down" ])
+}
+
+// def setTransition(String field, int startValue, int durationSeconds, ) {
+//     logInfo "Decrease effect speed"
+//     publishCommand(0, [ "command": "mode_speed_down" ])
+// }
+
 
 def setGenericName(int hue, int groupIndex){
     def colorName
