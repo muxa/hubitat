@@ -1,5 +1,5 @@
 /**
- *  Scene Switch v1.0.0
+ *  Scene Switch v1.0.1
  *
  *  Copyright 2019 Mikhail Diatchenko (@muxa)
  *

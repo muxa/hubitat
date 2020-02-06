@@ -1,5 +1,5 @@
 /**
- *  Scene Switch v1.0.0
+ *  Scene Switch v1.0.1
  *
  *  Copyright 2019 Mikhail Diatchenko (@muxa)
  * 
@@ -127,7 +127,7 @@ def initialize() {
 	app.updateLabel(nameOverride)
 	
 	state.currentScene = 0 // off
-	setupSubscriptions()
+	setupSubscriptions()       
 
 	log "Initialised ${nameOverride}"
 }
@@ -157,7 +157,7 @@ def getNextScene() {
 }
 
 def getSceneSwitches(sceneNumber) {
-	switch (state.currentScene) {
+	switch (sceneNumber) {
 		case 0:
 			return switches0
 		case 1:
@@ -169,6 +169,34 @@ def getSceneSwitches(sceneNumber) {
 	}
 }
 
+def applySwitchQueue(queue) {    
+    log.debug "Apply switch queue: ${queue} (${queue.size()})"
+    
+    if (queue.size() == 0) {
+        state.remove('switchQueue')
+        return 
+    }
+    
+    state.switchQueue = queue
+    
+    // TODO: add a delay to automatically clear queue if it takes to long
+    
+    switches0.each { s -> 
+        def targetValue = queue.get(s.id)        
+        //log.debug "Target value for ${s.id}: ${targetValue}"
+        switch (targetValue) {
+            case 'on':
+                log.debug "Turn ${s} on"
+                s.on()
+                break
+            case 'off':
+                log.debug "Turn ${s} off"
+                s.off()
+                break
+        }
+    }
+}
+
 def activateScene(sceneNumber) {
 	log "Activate scene ${sceneNumber}"
 
@@ -176,30 +204,45 @@ def activateScene(sceneNumber) {
 	state.currentScene = sceneNumber
 
 	if (sceneNumber == 0) {
-		bypassLinkedSwitchesSubscription {
-			switches0.each { s -> 
-				s.off()
-			}
-		}
+        
+        def switchQueue = [:]
+        
+        switches0
+            .findAll { it.currentValue('switch') == 'on' }
+            .each { switchQueue[it.id] = 'off' }
+        
+        applySwitchQueue(switchQueue)
+        
 	} else {
 		def previousSwitches = getSceneSwitches(previousScene)
 		def currentSwitches = getSceneSwitches(sceneNumber)
-		bypassLinkedSwitchesSubscription {
-			previousSwitches.each { s -> 
-
-				def onSwitch = currentSwitches.find { it == s }
-				if (onSwitch == null) {
-					log "turn ${s} off"
-					s.off()
-				} else {
-					log "keep ${s} on for next scene"
-				}
-			}
-			
-			currentSwitches.each { s -> 
-				s.on()
-			}
-		}
+        def switchQueue = [:]
+        //log "Previous scene ${previousScene}. Switches: ${previousSwitches}"
+        previousSwitches.each { s -> 
+            def onSwitch = currentSwitches.find { it.id == s.id }
+            if (onSwitch == null) {                
+                if (s.currentValue('switch') == 'on') {
+                    //log "- ${s} turn off"
+                    switchQueue[s.id] = 'off'
+                } else {
+                    //log "- ${s} is already off"
+                }
+            } else {
+                //log "- ${s} keep on for next scene"
+            }
+        }
+		
+        //log "Current scene ${sceneNumber}. Switches ${currentSwitches}"
+        currentSwitches.each { s -> 
+            if (s.currentValue('switch') == 'off') {
+                //log "- ${s} turn on"
+                switchQueue[s.id] = 'on'
+            } else {
+                //log "- ${s} already on"
+            }
+        }
+        
+        applySwitchQueue(switchQueue)
 	}
 }
 
@@ -209,7 +252,7 @@ def sceneSwitchHandler(evt) {
 	if (evt.value == "off") {
 		// if next scene is available then turn back on and activate scene
 		def nextScene = getNextScene()
-		log "Next scene: ${nextScene}"
+        log "Next scene: ${nextScene} (from ${state.currentScene})"
 		activateScene(nextScene)
 		if (nextScene == 0) {
 			// leave the scene switch off
@@ -225,27 +268,41 @@ def sceneSwitchHandler(evt) {
 	}
 }
 
-def linkedSwitchHandler(evt) {
-    log "Linked switch ${evt.displayName} is ${evt.value}"
+def linkedSwitchHandler(evt) {    
+    log "Linked switch ${evt.displayName} is ${evt.value}."
+       
+    def deviceId = evt.getDeviceId().toString()
+    if (state.switchQueue?.containsKey(deviceId)) {
+        // linked switch toggled by master switch        
+        state.switchQueue.remove(deviceId)
+        if (state.switchQueue.size() == 0) {
+            log "Scene ${state.currentScene} activated"
+        } else {
+            log "Waiting for queue to be processed: ${state.switchQueue}"
+        }
+    } else {
+        // linked switch turned manually. 
+        // detect scene and set scene switch accordingly
     
-	if (evt.value == "off") {
-		if (allSwitchesAreOff()) {
-			// all switches are off. activate scene 0 and turn the scene switch off
-			state.currentScene = 0
-			log "All linked switches are off. Turn off the scene switch"
+	    if (evt.value == "off") {
+		    if (allSwitchesAreOff()) {
+			    // all switches are off. activate scene 0 and turn the scene switch off
+			    state.currentScene = 0
+			    log "All linked switches are off. Turn off the scene switch"
 			
-			bypassSceneSwitchSubscription {
-				sceneSwitch.off()
-			}
-		}
-    } else if (sceneSwitch.currentValue("switch") == "off") {
-		state.currentScene = -1
-		log "Scene override. Turning scene switch on" // because one of the linked switched switched on
-		// TODO: detect scene
-		bypassSceneSwitchSubscription {
-			sceneSwitch.on()
-		}
-	}
+			    bypassSceneSwitchSubscription {
+				    sceneSwitch.off()
+			    }
+		    }
+        } else if (sceneSwitch.currentValue("switch") == "off") {
+		    state.currentScene = -1
+		    log "Scene override. Turning scene switch on" // because one of the linked switched switched on
+		    // TODO: detect scene
+		    bypassSceneSwitchSubscription {
+    			sceneSwitch.on()
+		    }
+	    }
+    }
 }
 
 def allSwitchesAreOff() {
@@ -264,22 +321,6 @@ def bypassSceneSwitchSubscription(Closure callback) {
     runInMillis(500, 'setupSceneSwitchSubscription')
 }
 
-def bypassLinkedSwitchesSubscription(Closure callback) {
-    // we need to bypass subscriptions, so that we don't get a feedback switches what we toggle in `callback`
-    // to do that we need to delay restoring subscriptions, since switch events arrive asynchrounously
-    
-	log "Unsubscribe from linked switches events"
-	unsubscribe(switches0, "switch", 'linkedSwitchHandler')
-	unsubscribe(switches1, "switch", 'linkedSwitchHandler')
-	unsubscribe(switches2, "switch", 'linkedSwitchHandler')
-	unsubscribe(switches3, "switch", 'linkedSwitchHandler')
-	
-	callback();
-
-	// restore subscription
-    runInMillis(500, 'setupLinkedSwitchesSubscription')
-}
-
 def setupSubscriptions() {
     setupSceneSwitchSubscription()
     setupLinkedSwitchesSubscription()
@@ -295,9 +336,10 @@ def setupLinkedSwitchesSubscription() {
     log "(Re)subscribe to linked switches events"
     
     subscribe(switches0, "switch", linkedSwitchHandler)
-    subscribe(switches1, "switch", linkedSwitchHandler)
-    subscribe(switches2, "switch", linkedSwitchHandler)
-    subscribe(switches3, "switch", linkedSwitchHandler)
+    // TODO: make sure that all switches are handled (assuming switches0 contains all switches from other scenes)
+    //subscribe(switches1, "switch", linkedSwitchHandler)
+    //subscribe(switches2, "switch", linkedSwitchHandler)
+    //subscribe(switches3, "switch", linkedSwitchHandler)
 }
 
 def log(msg) {
