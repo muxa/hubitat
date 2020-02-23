@@ -1,7 +1,7 @@
 /*
  * WLED Light 
  *  Device Driver for Hubitat Elevation hub
- *  Version 1.0.5
+ *  Version 1.1.0
  *
  * Allows keeping device status in sync with WLED light (https://github.com/Aircoookie/WLED) and controlling it via MQTT broker.
  *
@@ -19,97 +19,9 @@
  * 
  */
 
-import groovy.transform.Field
-
-@Field static List lightEffects = [
-    "Solid",
-    "Blink",
-    "Breathe",
-    "Wipe",
-    "Wipe Random",
-    "Random Colors",
-    "Sweep",
-    "Dynamic",
-    "Colorloop",
-    "Rainbow",
-    "Scan",
-    "Dual Scan",
-    "Fade",
-    "Chase",
-    "Chase Rainbow",
-    "Running",
-    "Saw",
-    "Twinkle",
-    "Dissolve",
-    "Dissolve Rnd",
-    "Sparkle",
-    "Dark Sparkle",
-    "Sparkle+",
-    "Strobe",
-    "Strobe Rainbow",
-    "Mega Strobe",
-    "Blink Rainbow",
-    "Android",
-    "Chase",
-    "Chase Random",
-    "Chase Rainbow",
-    "Chase Flash",
-    "Chase Flash Rnd",
-    "Rainbow Runner",
-    "Colorful",
-    "Traffic Light",
-    "Sweep Random",
-    "Running 2",
-    "Red & Blue",
-    "Stream",
-    "Scanner",
-    "Lighthouse",
-    "Fireworks",
-    "Rain",
-    "Merry Christmas",
-    "Fire Flicker",
-    "Gradient",
-    "Loading",
-    "In Out",
-    "In In",
-    "Out Out",
-    "Out In",
-    "Circus",
-    "Halloween",
-    "Tri Chase",
-    "Tri Wipe",
-    "Tri Fade",
-    "Lightning",
-    "ICU",
-    "Multi Comet",
-    "Dual Scanner",
-    "Stream 2",
-    "Oscillate",
-    "Pride 2015",
-    "Juggle",
-    "Palette",
-    "Fire 2012",
-    "Colorwaves",
-    "BPM",
-    "Fill Noise",
-    "Noise 1",
-    "Noise 2",
-    "Noise 3",
-    "Noise 4",
-    "Colortwinkles",
-    "Lake",
-    "Meteor",
-    "Smooth Meteor",
-    "Railway",
-    "Ripple",
-    "Twinklefox",
-    "Twinklecat",
-    "Halloween Eyes"
-]
-
 metadata {
     definition (name: "WLED MQTT Light", namespace: "muxa", author: "Mikhail Diatchenko") {
-        capability "Configuration"
+        capability "Initialize"
         capability "Actuator"
         capability "Switch"
         capability "SwitchLevel"
@@ -119,10 +31,11 @@ metadata {
 		
         command "on"
         command "off"
+        command "setEffect", [[name: "Effect Name *", type: "STRING"]]
         command "setEffectSpeed", [[name: "Effect speed *", type: "NUMBER", description: "Effect speed to set (0 to 255)", constraints:[]]]
         command "setEffectIntensity", [[name: "Effect intensity *", type: "NUMBER", description: "Effect intensity to set (0 to 255)", constraints:[]]]
         command "setPreset", [[name: "Preset number *", type: "NUMBER", description: "Preset to set (0 to 16)", constraints:[]]]
-        command "reconnect"
+        command "configure", [[name: "WLED IP address *", type: "STRING", description: "Configure effects & presets from WLED device"]]
         
         attribute "level", "number"
         attribute "effectNumber", "number"
@@ -140,12 +53,6 @@ preferences {
 }
 
 def installed() {
-    def effectMap = lightEffects.collect { element, index ->
-      [(index): element] 
-    }
-    def le = new groovy.json.JsonBuilder(lightEffects)
-    sendEvent(name:"lightEffects",value:le)
-    
     log.info "installed..."
 }
 
@@ -162,6 +69,50 @@ def xmlToMap(xml) {
         }
     }
     return map
+}
+
+def configure(ipAddress) {
+    logInfo "Obtaining WLED configuration from ${ipAddress}"
+    def getParams = [
+		uri: "http://${ipAddress}/json",
+		requestContentType: 'application/json',
+		contentType: 'application/json'
+	]
+    asynchttpGet('processApiResponse', getParams, [ip: ipAddress])
+}
+
+def processApiResponse(response, data) {
+    if (response.getStatus() == 200) {
+        def json = new groovy.json.JsonSlurper().parseText(response.data)
+        logInfo "Detected WLED v${json.info.ver}"
+
+        state.ver = json.info.ver
+        state.ip = data.ip
+        
+        configureEffects(json.effects)
+        configurePalettes(json.palettes)
+	} else {
+		log.error "WLED API returned error: $response"
+	}
+}
+
+def configureEffects(effects) {
+    logDebug "Configure effects ${effects}"
+
+    state.effects = effects
+    
+    def effectMap = [:]
+    effects.eachWithIndex { element, index ->
+        effectMap[(index)] = element
+    }
+    def le = new groovy.json.JsonBuilder(effectMap)
+    sendEvent(name:"lightEffects",value:le)
+}
+
+def configurePalettes(palettes) {
+    logDebug "Configure palettes ${palettes}"
+
+    state.palettes = palettes
 }
 
 def parse(String description) {
@@ -214,7 +165,7 @@ def parse(String description) {
     def effectIndex = map.fx.toInteger()
     if (effectIndex != device.currentValue("effectNumber")) {
         // effect changed
-        def effectName = lightEffects[effectIndex]
+        def effectName = state.effects[effectIndex]
         def descr = "Effect was set to ${effectName} (${effectIndex})"
         logInfo "${descr}"
         sendEvent(name:"effectNumber", value:effectIndex, descriptionText: descr)
@@ -247,8 +198,8 @@ def off() {
 
 def setEffect(String effect){
     logInfo "setEffect $effect"
-    def index = lightEffects.indexOf(effect)
-    if (index >= 0) setEffect(index)
+    def effectIndex = state.effects.indexOf(effect)
+    if (effectIndex >= 0) setEffect(effectIndex)
 }
 
 def setEffect(id){
@@ -269,7 +220,7 @@ def setEffectIntensity(indensity){
 def setNextEffect(){
     def currentEffectId = device.currentValue("effectNumber") ?: 0
     currentEffectId++
-    if (currentEffectId >= lightEffects.size()) 
+    if (currentEffectId >= state.effects.size()) 
         currentEffectId = 0
     setEffect(currentEffectId)
 }
@@ -278,7 +229,7 @@ def setPreviousEffect(){
     def currentEffectId = device.currentValue("effectNumber") ?: 1
     currentEffectId--
     if (currentEffectId < 1) 
-        currentEffectId = lightEffects.size() - 1
+        currentEffectId = state.effects.size() - 1
     setEffect(currentEffectId)
 }
 
@@ -286,7 +237,6 @@ def setPreset(preset){
     logInfo "setPreset $preset"
     publishCommand "PL=${preset}"
 } 
-
 
 def setColor(value) {
     logInfo "setColor $value"
@@ -357,11 +307,6 @@ def uninstalled() {
     disconnect()
 }
 
-def reconnect() {
-    disconnect()
-    initialize()
-}
-
 def disconnect() {
     if (state.connected) {
         log.info "Disconnecting from MQTT"
@@ -370,22 +315,32 @@ def disconnect() {
     }
 }
 
-def delayedInitialise() {
-    // increase delay by 5 seconds evety time
-    state.delay = (state.delay ?: 0) + 5
+def delayedConnect() {
+    // increase delay by 5 seconds every time, to max of 1 hour
+    if (state.delay < 3600)
+        state.delay = (state.delay ?: 0) + 5
+
     logDebug "Reconnecting in ${state.delay}s"
-    runIn(state.delay, initialize)
+    runIn(state.delay, connect)
 }
 
 def initialize() {
     logDebug "Initialize"
+
+    state.delay = 0
+    disconnect()
+    connect()
+}
+
+def connect() {
     try {
         // open connection
+        log.info "Connecting to ${settings.mqttBroker}"
         interfaces.mqtt.connect("tcp://" + settings.mqttBroker, "hubitat_wled_${device.id}", null, null)
         // subscribe once received connection succeeded status update below        
     } catch(e) {
-        log.error "MQTT Initialize error: ${e.message}."
-        delayedInitialise()
+        log.error "MQTT Connect error: ${e.message}."
+        delayedConnect()
     }
 }
 
@@ -404,21 +359,18 @@ def mqttClientStatus(String status){
             log.warn status
             switch (parts[1]) {
                 case 'Connection lost':
-                    state.connected = false
-                    state.delay = 0
-                    delayedInitialise()
-                    break
                 case 'send error':
                     state.connected = false
                     state.delay = 0
-                    delayedInitialise()
+                    delayedConnect()
                     break
             }
             break
         case 'Status':
             log.info "MQTT ${status}"
             switch (parts[1]) {
-                case 'Connection succeeded':                    
+                case 'Connection succeeded':
+                    state.connected = true
                     // without this delay the `parse` method is never called
                     // (it seems that there needs to be some delay after connection to subscribe)
                     runInMillis(1000, subscribe)
