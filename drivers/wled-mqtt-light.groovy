@@ -47,8 +47,7 @@ metadata {
 preferences {
     section("URIs") {
         input "mqttBroker", "string", title: "MQTT Broker Address:Port", required: true
-        input "mqttHassTopic", "string", title: "MQTT Hass Configuration Topic", required: true, description: "(e.g. homassistant/light/WLED)"
-		input "mqttTopic", "string", title: "MQTT Topic", required: true, description: "(Obsolete)"
+        input "mqttClientID", "string", title: "WLED Client ID", required: true, description: "(e.g. WLED-bedroom)"
         input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true
     }
 }
@@ -75,7 +74,7 @@ def xmlToMap(xml) {
 def parse(String description) {
     def mqtt = interfaces.mqtt.parseMessage(description)
 
-    if (mqtt.topic.startsWith(settings.mqttHassTopic)) {
+    if (mqtt.topic.startsWith("homeassistant/light/${settings.mqttClientID}")) {
         def json = new groovy.json.JsonSlurper().parseText(mqtt.payload)
         configureFromHass(json)
         return
@@ -221,8 +220,12 @@ def setLevel(value) {
 }
 
 def publishCommand(command) {
-    logDebug "Publish ${settings.mqttTopic}/api&${command}"
-    interfaces.mqtt.publish(settings.mqttTopic + "/api", command)
+    if (state.commandTopic) {
+        logDebug "Publish ${state.commandTopic}&${command}"
+        interfaces.mqtt.publish(state.commandTopic, command)
+    } else {
+        log.warn "Command topic not configured yet. Command `${command}` not sent"
+    }
 }
 
 def setGenericName(hue){
@@ -264,15 +267,18 @@ def setGenericName(hue){
 def configureFromHass(config) {
     logDebug "Configure from ${config}"
 
-    if (settings.mqttTopic != config.cmd_t) {
-        logDebug "Updates topic will be set to ${config.cmd_t}"
+    if (config.fx_cmd_t) {
+        state.commandTopic = config.fx_cmd_t
+    } else {
+        log.warn "Expected fx_cmd_t config"
+        return
+    }
 
-        if (settings.mqttTopic) {
-            interfaces.mqtt.unsubscribe("${settings.mqttTopic}/v")
+    if (state.rootTopic != config.cmd_t) {
+        if (state.updatesTopic) {
+            interfaces.mqtt.unsubscribe(state.updatesTopic)
         }
         
-        device.updateSetting('mqttTopic', config.cmd_t)
-
         def effectMap = [:]
         config.fx_list.eachWithIndex { element, index ->
           effectMap[(index)] = element.split('] ')[1]
@@ -280,7 +286,11 @@ def configureFromHass(config) {
                 
         configureEffects(effectMap)
 
-        subscribeUpdates(config.cmd_t)
+        state.rootTopic = config.cmd_t
+        logDebug "Root topic set to ${state.rootTopic}"
+        state.updatesTopic = "${config.cmd_t}/v"
+        logDebug "Updates topic set to ${state.updatesTopic}"
+        subscribeUpdates()
     } else {
         logDebug "Already configured"
     }
@@ -304,10 +314,10 @@ def uninstalled() {
 def disconnect() {
     if (state.connected) {
         log.info "Disconnecting from MQTT"
-        interfaces.mqtt.unsubscribe("${settings.mqttHassTopic}/config")
+        interfaces.mqtt.unsubscribe("homeassistant/light/${settings.mqttClientID}/config")
 
-        if (settings.mqttTopic) {
-            interfaces.mqtt.unsubscribe("${settings.mqttTopic}/v")
+        if (state.updatesTopic) {
+            interfaces.mqtt.unsubscribe(state.updatesTopic)
         }
         
         interfaces.mqtt.disconnect()
@@ -343,17 +353,16 @@ def connect() {
     }
 }
 
-def subscribeUpdates(String fallbackTopic = null) {
-    def topic = settings.mqttTopic ?: fallbackTopic
-    if (topic) {
-        interfaces.mqtt.subscribe("${topic}/v") // Contains XML API response (same as HTTP API)
-        logDebug "Subscribed to topic ${topic}/v"
+def subscribeUpdates() {
+    if (state.updatesTopic) {
+        interfaces.mqtt.subscribe(state.updatesTopic) // Contains XML API response (same as HTTP API)
+        logDebug "Subscribed to topic ${state.updatesTopic}"
     }
 }
 
 def subscribe() {
-    interfaces.mqtt.subscribe("${settings.mqttHassTopic}/config")
-    logDebug "Subscribed to topic ${settings.mqttHassTopic}/config"
+    interfaces.mqtt.subscribe("homeassistant/light/${settings.mqttClientID}/config")
+    logDebug "Subscribed to topic homeassistant/light/${settings.mqttClientID}/config"
 
     subscribeUpdates()
 }
