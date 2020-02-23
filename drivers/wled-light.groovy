@@ -90,7 +90,7 @@ def processApiResponse(response, data) {
         state.ip = data.ip
         
         configureEffects(json.effects)
-        configurePalettes(json.palettes)
+        //configurePalettes(json.palettes)
 	} else {
 		log.error "WLED API returned error: $response"
 	}
