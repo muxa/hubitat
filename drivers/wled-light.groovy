@@ -1,7 +1,7 @@
 /*
  * WLED Light 
  *  Device Driver for Hubitat Elevation hub
- *  Version 1.1.0
+ *  Version 1.2.0
  *
  * Allows keeping device status in sync with WLED light (https://github.com/Aircoookie/WLED) and controlling it via MQTT broker.
  *
@@ -36,11 +36,14 @@ metadata {
         command "setEffectIntensity", [[name: "Effect intensity *", type: "NUMBER", description: "Effect intensity to set (0 to 255)", constraints:[]]]
         command "setPreset", [[name: "Preset number *", type: "NUMBER", description: "Preset to set (0 to 16)", constraints:[]]]
         command "configure", [[name: "WLED IP address *", type: "STRING", description: "Configure effects & presets from WLED device"]]
+        command "setPalette", [[name: "Palette Index *", type: "NUMBER"]]
+        command "setPalette", [[name: "Palette Name *", type: "STRING"]]
         
         attribute "level", "number"
         attribute "effectNumber", "number"
         attribute "effectSpeed", "number"
-        attribute "effectIntensity", "number"
+        attribute "paletteNumber", "number"
+        attribute "paletteName", "string"
     }
 }
 
@@ -90,7 +93,7 @@ def processApiResponse(response, data) {
         state.ip = data.ip
         
         configureEffects(json.effects)
-        //configurePalettes(json.palettes)
+        configurePalettes(json.palettes)
 	} else {
 		log.error "WLED API returned error: $response"
 	}
@@ -183,8 +186,17 @@ def parse(String description) {
         // effect intensity changed
         sendEvent(name:"effectIntensity", value:effectIntensity)
     }
-}
 
+    def paletteIndex = map.fp.toInteger()
+    if (paletteIndex != device.currentValue("paletteNumber")) {
+        // palette changed
+        def paletteName = state.palettes[paletteIndex]
+        def descr = "Palette was set to ${paletteName} (${paletteIndex})"
+        logInfo "${descr}"
+        sendEvent(name:"paletteNumber", value:paletteIndex, descriptionText: descr)
+        sendEvent(name:"paletteName", value:paletteName, descriptionText: descr)
+    }
+}
 
 def on() {
     logInfo "on"
@@ -256,6 +268,17 @@ def setLevel(value) {
     logInfo "setLevel $value"
     publishCommand "A=${Math.round(value * 2.55)}"
 }
+
+def setPalette(String palette){
+    logInfo "setPalette $palette"
+    def paletteIndex = state.palettes.indexOf(palette)
+    if (paletteIndex >= 0) setPalette(paletteIndex)
+}
+
+def setPalette(id){
+    logInfo "setPalette $id"
+    publishCommand "FP=${id}"
+} 
 
 def publishCommand(command) {
     logDebug "Publish ${settings.mqttTopic}/api&${command}"
