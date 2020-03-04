@@ -1,7 +1,7 @@
 /*
  * Mitsubishi Air Conditioner MQTT
  *  Device Driver for Hubitat Elevation hub
- *  Version 1.0.0
+ *  Version 1.0.1
  * 
  * Control Mitsubishi AC via MQTT using ESP8266 (https://github.com/SwiCago/HeatPump)
  *
@@ -108,8 +108,8 @@ def parse(String description) {
         // "3",   /* Air direction (vertical): 1-5, SWING, or AUTO */
         // "|"    /* Air direction (horizontal): <<, <, |, >, >>, <>, or SWING */
 
-        if (previousStatus?.temperature != json.temperature) {
-            def temp = convertCelciusToLocalTemp(json.roomTemperature)
+        if (previousStatus?.temperature != json.temperature || previousStatus?.mode != json.mode) {
+            def temp = convertCelciusToLocalTemp(json.temperature)
             switch (json.mode) {
                 case 'HEAT':
                     if (device.currentValue("heatingSetpoint") != temp) {
@@ -118,7 +118,7 @@ def parse(String description) {
                     break
                 case 'COOL':
                     if (device.currentValue("coolingSetpoint") != temp) {
-                        events.heatingSetpoint = [name: "coolingSetpoint", value: temp, unit: "°${location.temperatureScale}"]
+                        events.coolingSetpoint = [name: "coolingSetpoint", value: temp, unit: "°${location.temperatureScale}"]
                     }
                     break
                 default:
