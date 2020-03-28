@@ -6,6 +6,7 @@
 
 # Custom Drivers for Hubitat
 
+* [Tasmota Switch](drivers/tasmota-mqtt-switch.groovy) - control Tasmota Switch via MQTT.
 * [WLED Light](drivers/wled-light.groovy) - control WLED light via MQTT. ![WLED](https://raw.githubusercontent.com/Aircoookie/WLED/master/wled_logo.png)
 * [Konke Zigbee Button](drivers/konke-zigbee-button.groovy) - this driver has been in use since 24 of August 2019 with not a single issue noticed. ![Konke Zigbee Button](./images/konke-zigbee-button.jpeg)
 * [Konke Zigbee Temperature Humidity Sensor](drivers/konke-zigbee-temp-humidity-sensor.groovy) ![Konke Zigbee Button](./images/konke-zigbee-temp-humidity-sensor.jpg)
