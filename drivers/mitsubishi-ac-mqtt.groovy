@@ -1,7 +1,7 @@
 /*
  * Mitsubishi Air Conditioner MQTT
  *  Device Driver for Hubitat Elevation hub
- *  Version 1.0.1
+ *  Version 1.0.2
  * 
  * Control Mitsubishi AC via MQTT using ESP8266 (https://github.com/SwiCago/HeatPump)
  *
@@ -38,7 +38,7 @@ import groovy.transform.Field
 
 @Field static Map heatpumpFanToHubitatFanMode = [
     "QUIET": "circulate",
-    "1": "on",
+    "1": "circulate",
     "2": "on",
     "3": "on",
     "4": "on",
@@ -147,8 +147,13 @@ def parse(String description) {
             }
         }
         
-        if (previousStatus?.fan != json.fan) {            
-            events.thermostatFanMode = [name: "thermostatFanMode", value: heatpumpFanToHubitatFanMode[json.fan]]
+        if (previousStatus?.fan != json.fan || previousStatus?.power != json.power) {
+            if (json.power == "ON") {
+                events.thermostatFanMode = [name: "thermostatFanMode", value: heatpumpFanToHubitatFanMode[json.fan]]
+            } else {
+                // when unit is OFF fan in 'auto' is considered off
+                events.thermostatFanMode = [name: "thermostatFanMode", value: "auto"]
+            }
         }
     }
 
@@ -194,8 +199,11 @@ def emergencyHeat() {
 }
 
 def fanAuto() {
-    logInfo "Setting to Fan (Auto)"    
-    publishCommand([ "power": "ON", "mode": "FAN", "fan": "AUTO" ])
+    // this can be called from Home Bridge when turning off the Fan
+    if (state.status?.power == 'ON') {
+        logInfo "Setting to Fan (Auto)"
+        publishCommand([ "power": "ON", "mode": "FAN", "fan": "AUTO" ])
+    }
 }
 
 def fanCirculate() {
@@ -204,7 +212,7 @@ def fanCirculate() {
 }
 
 def fanOn() {
-    logInfo "Setting to Fan (Max)"
+    logInfo "Setting to Fan (On)"
     // use previous fan speed or default to lowest setting
     publishCommand([ "power": "ON", "mode": "FAN", "fan": state.status?.fan ?: "1" ])
 }
