@@ -1,12 +1,10 @@
 /*
- * WLED Light 
+ * WLED MQTT Light 
  *  Device Driver for Hubitat Elevation hub
- *  Version 1.2.0
+ *  Version 1.2.1
  *
  * Allows keeping device status in sync with WLED light (https://github.com/Aircoookie/WLED) and controlling it via MQTT broker.
  *
- * Known issues:
- * 1. When HE is restarted the HE device can't control WLED. Only after running Reconnect command it starts working. 
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -240,7 +238,7 @@ def setNextEffect(){
 def setPreviousEffect(){
     def currentEffectId = device.currentValue("effectNumber") ?: 1
     currentEffectId--
-    if (currentEffectId < 1) 
+    if (currentEffectId < 0) 
         currentEffectId = state.effects.size() - 1
     setEffect(currentEffectId)
 }
