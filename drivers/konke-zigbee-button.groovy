@@ -1,7 +1,7 @@
 /**
  *  Konke ZigBee Button
  *  Device Driver for Hubitat Elevation hub
- *  Version 0.1.5
+ *  Version 0.1.6
  *
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -18,10 +18,11 @@
  */
 
 metadata {
-	definition (name: "Konke ZigBee Button", namespace: "muxa", author: "Mikhail Diatchenko") {
+	definition(name: "Konke ZigBee Button", namespace: "muxa", author: "Mikhail Diatchenko") {
 		capability "PushableButton"
-        capability "DoubleTapableButton"
+		capability "DoubleTapableButton"
 		capability "HoldableButton"
+		capability "Momentary"
 		capability "Battery"
 
 		attribute "lastCheckinEpoch", "String"
@@ -34,14 +35,17 @@ metadata {
 
 		fingerprint endpointId: "01", profileId: "0104", deviceId: "0104", inClusters: "0000,0001,0003,0004,0005,0006", outClusters: "0003", manufacturer: "Konke", model: "3AFE170100510001"
 
+		command "doubleTap"
+		command "hold"
+		command "pushReset"
 		command "resetBatteryReplacedDate"
 	}
 
 	preferences {
 		//Battery Voltage Range
- 		input name: "voltsmin", title: "Min Volts (0% battery = ___ volts, range 2.0 to 2.7). Default = 2.5 Volts", description: "", type: "decimal", range: "2..2.7"
- 		input name: "voltsmax", title: "Max Volts (100% battery = ___ volts, range 2.8 to 3.4). Default = 3.0 Volts", description: "", type: "decimal", range: "2.8..3.4"
- 		//Logging Message Config
+		input name: "voltsmin", title: "Min Volts (0% battery = ___ volts, range 2.0 to 2.7). Default = 2.5 Volts", description: "", type: "decimal", range: "2..2.7"
+		input name: "voltsmax", title: "Max Volts (100% battery = ___ volts, range 2.8 to 3.4). Default = 3.0 Volts", description: "", type: "decimal", range: "2.8..3.4"
+		//Logging Message Config
 		input name: "infoLogging", type: "bool", title: "Enable info message logging", description: ""
 		input name: "debugLogging", type: "bool", title: "Enable debug message logging", description: ""
 	}
@@ -49,10 +53,10 @@ metadata {
 
 // Parse incoming device messages to generate events
 def parse(String description) {
-	def cluster = description.split(",").find {it.split(":")[0].trim() == "cluster"}?.split(":")[1].trim()
-	def attrId = description.split(",").find {it.split(":")[0].trim() == "attrId"}?.split(":")[1].trim()
-	def encoding = Integer.parseInt(description.split(",").find {it.split(":")[0].trim() == "encoding"}?.split(":")[1].trim(), 16)
-	def valueHex = description.split(",").find {it.split(":")[0].trim() == "value"}?.split(":")[1].trim()
+	def cluster = description.split(",").find { it.split(":")[0].trim() == "cluster" }?.split(":")[1].trim()
+	def attrId = description.split(",").find { it.split(":")[0].trim() == "attrId" }?.split(":")[1].trim()
+	def encoding = Integer.parseInt(description.split(",").find { it.split(":")[0].trim() == "encoding" }?.split(":")[1].trim(), 16)
+	def valueHex = description.split(",").find { it.split(":")[0].trim() == "value" }?.split(":")[1].trim()
 	Map map = [:]
 
 	displayDebugLog("Parsing message: ${description}")
@@ -64,12 +68,12 @@ def parse(String description) {
 
 	// Send message data to appropriate parsing function based on the type of report
 	if (cluster == "0006")
-		// Parse button press message
+	// Parse button press message
 		map = parseButtonMessage(valueHex)
-    else if (cluster == "0001" & attrId == "0020")
-		// Parse battery level from hourly announcement message
+	else if (cluster == "0001" & attrId == "0020")
+	// Parse battery level from hourly announcement message
 		map = parseBattery(valueHex)
-	else 
+	else
 		displayDebugLog("Unable to parse message")
 
 	if (map != [:]) {
@@ -82,38 +86,38 @@ def parse(String description) {
 // Parse button message (press, double-click, triple-click, quad-click, and release)
 private parseButtonMessage(attrValue) {
 	def attribute = ""
-    def button = 1
-    def descr = ""
-    switch (attrValue) {
-        case "80": 
-            attribute = "pushed"
-            descr = "Button was pressed"
-            break
-        case "81": 
-            attribute = "doubleTapped"
-            descr = "Button was double-tapped"
-            break
-        case "82": 
-            attribute = "held"
-            descr = "Button was held"
-            break
-        case "CD": 
-            attribute = "pushed"
-            button = 2
-            descr = "Button has reset pressed"
-            break
-        default:
-            return [:]
-    }
-    updateDateTimeStamp("Pressed")
-    displayInfoLog(descr)
-    
-    return [
-			name: attribute,
-			value: button,
-			isStateChange: true,
+	def button = 1
+	def descr = ""
+	switch (attrValue) {
+		case "80":
+			attribute = "pushed"
+			descr = "Button was pressed"
+			break
+		case "81":
+			attribute = "doubleTapped"
+			descr = "Button was double-tapped"
+			break
+		case "82":
+			attribute = "held"
+			descr = "Button was held"
+			break
+		case "CD":
+			attribute = "pushed"
+			button = 2
+			descr = "Button has reset pressed"
+			break
+		default:
+			return [:]
+	}
+	updateDateTimeStamp("Pressed")
+	displayInfoLog(descr)
+
+	return [
+			name           : attribute,
+			value          : button,
+			isStateChange  : true,
 			descriptionText: descr
-		]
+	]
 }
 
 // Generate buttonPressedEpoch/Time or buttonHeldEpoch/Time event for Epoch time/date app or Hubitat dashboard use
@@ -127,7 +131,7 @@ def updateDateTimeStamp(timeStampType) {
 // 0x0020 BatteryVoltage -  The BatteryVoltage attribute is 8 bits in length and specifies the current actual (measured) battery voltage, in units of 100mV.
 private parseBattery(valueHex) {
 	displayDebugLog("Battery parse string = ${valueHex}")
-	def rawVolts = hexStrToSignedInt(valueHex)/10
+	def rawVolts = hexStrToSignedInt(valueHex) / 10
 	def minVolts = voltsmin ? voltsmin : 2.5
 	def maxVolts = voltsmax ? voltsmax : 3.0
 	def pct = (rawVolts - minVolts) / (maxVolts - minVolts)
@@ -135,11 +139,11 @@ private parseBattery(valueHex) {
 	def descText = "Battery level is ${roundedPct}% (${rawVolts} Volts)"
 	displayInfoLog(descText)
 	def result = [
-		name: 'battery',
-		value: roundedPct,
-		unit: "%",
-		isStateChange: true,
-		descriptionText: descText
+			name           : 'battery',
+			value          : roundedPct,
+			unit           : "%",
+			isStateChange  : true,
+			descriptionText: descText
 	]
 	return result
 }
@@ -156,20 +160,28 @@ private def displayInfoLog(message) {
 //Reset the batteryLastReplaced date to current date
 def resetBatteryReplacedDate(paired) {
 	def newlyPaired = paired ? " for newly paired sensor" : ""
-	sendEvent(name: "batteryLastReplaced", value: new Date())
+	sendEvent(name: "batteryLastReplaced", value: new Date().toLocaleString(), descriptionText: "Set battery last replaced date")
 	displayInfoLog("Setting Battery Last Replaced to current date${newlyPaired}")
 }
 
-// this call is here to avoid Groovy errors when the Push command is used
-// it is empty because the Konke button is non-controllable
+//Simulate a button push
 def push() {
-	displayDebugLog("No action taken on Push Command. This button cannot be controlled.")
+	sendEvent(parseButtonMessage("80"))
 }
 
-// this call is here to avoid Groovy errors when the Hold command is used
-// it is empty because the Konke button is non-controllable
+//Simulate a button doubleTap
+def doubleTap() {
+	sendEvent(parseButtonMessage("81"))
+}
+
+//Simulate a button hold
 def hold() {
-	displayDebugLog("No action taken on Hold Command. This button cannot be controlled!")
+	sendEvent(parseButtonMessage("82"))
+}
+
+//Simulate a reset button push
+def pushReset() {
+	sendEvent(parseButtonMessage("CD"))
 }
 
 // installed() runs just after a sensor is paired
