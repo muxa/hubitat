@@ -36,7 +36,7 @@ Features:
 
 1. On the Hubitat hub, go to the _Drivers Code_ page and click _+ New Driver_
 2. Copy and paste the contents of [virtual-simple-garage-door-controller.groovy](../../drivers/virtual-simple-garage-door-controller.groovy) and _Save_
-5. Go to the _Devices_ page, click _Add Virtual Device_, specify _Device Name_, _Device Label_, select _Virtual Manual Garage Door Controller_ for _Type_ and click _Done_
+3. Go to the _Devices_ page, click _Add Virtual Device_, specify _Device Name_, _Device Label_, select _Virtual Manual Garage Door Controller_ for _Type_ and click _Done_
 
 This device will represent the state of your physical garage door and will enable controlling the door through it. 
 
@@ -49,11 +49,11 @@ The app can detect when your garage door is fully closed or fully open.
 * Attach a contact sensor to the garage door when it's fully _closed_ (the contact should be `closed` in that position)
 * Attach a contact sensor to the garage door when it's fully _open_ (the contact should be `closed` in that position)
 
-> If you only have a single contact sensor it's recommented to use it for detecting fully closed door. 
+> If you only have a single contact sensor it's recommended to use it for detecting fully closed door. 
 
 
 ## App Installation
 
 1. On the Hubitat hub, go to the _Apps Code_ page and click _+ New App_
 2. Copy and paste the contents of [garage-opener.groovy](garage-opener.groovy) and _Save_
-5. Go to the _Apps_ page, click _Add User App_, select _Garage Opener_ and click _Done_
+3. Go to the _Apps_ page, click _Add User App_, select _Garage Opener_ and click _Done_
