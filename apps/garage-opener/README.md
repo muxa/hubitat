@@ -51,8 +51,7 @@ The app can detect when your garage door is fully closed or fully open.
 
 > If you only have a single contact sensor it's recommended to use it for detecting fully closed door. 
 
-
-## App Installation
+### App Installation
 
 1. On the Hubitat hub, go to the _Apps Code_ page and click _+ New App_
 2. Copy and paste the contents of [garage-opener.groovy](garage-opener.groovy) and _Save_
