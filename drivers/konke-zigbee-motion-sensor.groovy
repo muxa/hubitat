@@ -34,7 +34,7 @@ metadata {
 
 	preferences {
 		input "motionreset", "number", title: "After motion is detected, wait ___ second(s) until resetting to inactive state. Default = 16 seconds (Hardware resets at 15 seconds)", description: "", range: "1..7200", defaultValue: 16
-        input "batteryReportingHours", "number", title: "Report battery every ___ hours. Default = 12h (Minimum 2 h)", description: "", range: "2..8760", defaultValue: 12
+        input "batteryReportingHours", "number", title: "Report battery every ___ hours. Default = 12h (Minimum 2 h)", description: "", range: "2..12", defaultValue: 12
 		
 		input name: "infoLogging", type: "bool", title: "Enable info message logging", description: ""
 		input name: "debugLogging", type: "bool", title: "Enable debug message logging", description: ""
