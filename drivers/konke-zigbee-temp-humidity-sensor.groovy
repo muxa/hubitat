@@ -1,7 +1,7 @@
 /**
  *  Konke ZigBee Temperature Humidity Sensor
  *  Device Driver for Hubitat Elevation hub
- *  Version 0.1.1
+ *  Version 0.1.2
  *
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -38,8 +38,8 @@ metadata {
 		input "tempOffset", "decimal", title:"Temperature Offset", description:"", range:"*..*"
 		input "humidityOffset", "decimal", title:"Humidity Offset", description:"", range: "*..*"
 		//Battery Voltage Range
-		input name: "voltsmin", title: "Min Volts (0% battery = ___ volts, range 2.0 to 2.9). Default = 2.9 Volts", description: "", type: "decimal", range: "2..2.9"
-		input name: "voltsmax", title: "Max Volts (100% battery = ___ volts, range 2.95 to 3.4). Default = 3.05 Volts", description: "", type: "decimal", range: "2.95..3.4"
+		input name: "voltsmin", title: "Min Volts (0% battery = ___ volts, range 2.0 to 2.9). Default = 2.6 Volts", description: "", type: "decimal", range: "2..2.9"
+		input name: "voltsmax", title: "Max Volts (100% battery = ___ volts, range 2.9 to 3.4). Default = 3 Volts", description: "", type: "decimal", range: "2.9..3.4"
 		//Date/Time Stamp Events Config
 		input name: "lastCheckinEnable", type: "bool", title: "Enable custom date/time stamp events for lastCheckin", description: ""
 		//Logging Message Config
@@ -124,8 +124,8 @@ private parseBattery(valueHex) {
 	displayDebugLog("Battery parse string = ${valueHex}")
 	def rawValue = Integer.parseInt(valueHex,16)
 	def rawVolts = rawValue / 10
-	def minVolts = voltsmin ? voltsmin : 2.9
-	def maxVolts = voltsmax ? voltsmax : 3.05
+	def minVolts = voltsmin ? voltsmin : 2.6
+	def maxVolts = voltsmax ? voltsmax : 3.0
 	def pct = (rawVolts - minVolts) / (maxVolts - minVolts)
 	def roundedPct = Math.min(100, Math.round(pct * 100))
 	def descText = "Battery level is ${roundedPct}% (${rawVolts} Volts)"
