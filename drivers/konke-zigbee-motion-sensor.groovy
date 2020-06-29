@@ -1,7 +1,7 @@
 /**
  *  Konke ZigBee Motion Sensor
  *  Device Driver for Hubitat Elevation hub
- *  Version 1.0.0
+ *  Version 1.0.1
  *
  *  Based on code from Robert Morris and ssalahi.
  *
@@ -85,7 +85,7 @@ def parse(String description) {
     //------IAS Zone Enroll request------//
 	else if (description?.startsWith('enroll request')) {
 		logInfo "Sending IAS enroll response..."
-		map = zigbee.enrollResponse()
+		return zigbee.enrollResponse()
 	}
     else {
         log.warn "Description not parsed: $description"
