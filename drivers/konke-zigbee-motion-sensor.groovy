@@ -1,7 +1,7 @@
 /**
  *  Konke ZigBee Motion Sensor
  *  Device Driver for Hubitat Elevation hub
- *  Version 1.0.1
+ *  Version 1.0.2
  *
  *  Based on code from Robert Morris and ssalahi.
  *
@@ -147,8 +147,7 @@ private handleMotion(motionActive) {
 def getMotionResult(motionActive) {
 	def descriptionText = "Detected motion"
     if (!motionActive) {
-        def secondsInactive = Math.round((now() - state.motionStarted)/1000)
-		descriptionText = "Motion reset to inactive after ${secondsInactive}s"
+		descriptionText = "Motion reset to inactive after ${getSecondsInactive()}s"
     }
 	return [
 			name			: 'motion',
@@ -159,8 +158,7 @@ def getMotionResult(motionActive) {
 
 def resetToMotionInactive() {
 	if (device.currentState('motion')?.value == "active") {
-		def secondsInactive = Math.round((now() - state.motionStarted)/1000)
-		def descText = "Motion reset to inactive after ${secondsInactive}s"
+		def descText = "Motion reset to inactive after ${getSecondsInactive()}s"
 		sendEvent(
 			name:'motion',
 			value:'inactive',
@@ -169,6 +167,14 @@ def resetToMotionInactive() {
 		)
 		logInfo(descText)
 	}
+}
+
+def getSecondsInactive() {
+    if (state.motionStarted) {
+        return Math.round((now() - state.motionStarted)/1000)
+    } else {
+        return motionreset ?: 16
+    }
 }
 
 // Convert 2-byte hex string to voltage
