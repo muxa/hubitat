@@ -4,11 +4,11 @@ Use one switch to toggle scenes.
 
 * Specify which switches to turn off
 * Specify switches to turn for up to 3 scenes
-* When scene switch is turned off it activates the next scene and turns itself back on, unless that whas the last scene
-* Turning any of the linked switches in the Off group on turns the scene switch on in a "override" mode, in which the next scene is Off
+* When scene switch is turned off and quickly tured back on it activates the next scene
 
 Usage example:
 
+* Use a one light switch to optionnally turn on or off other light switches (changing the schene)
 * Use a downstairs switch (dummy switch, not wired to any light) to be able to switch off all lights upstairs, and turn on only a subset of those lights
 
 ## App Installation
