@@ -47,6 +47,15 @@ def masterSwitch = [
 		required:			true
 	]
 
+def restoreStates = [
+		name:				"restoreStates",
+		type:				"capability.switch",
+		title:				"Restore Previous Light States",
+		multiple:			false,
+		defaultValue:		true,
+		required:			true
+	]
+
 def nameOverride = [
 		name:				"nameOverride",
 		type:				"string",
@@ -75,6 +84,8 @@ preferences {
 		section ("<b>Advanced Settings</b>", hideable: true, hidden: true) {
 			paragraph "<br/><b>OPTIONAL:</b> Override the displayed name of the binding."
 			input nameOverride
+			paragraph "<br/>Remember/restore previous light states (TRUE) or always turn on all lights (FALSE)"
+			input restoreStates
 		}
 		section () {
 			input enableLogging
@@ -127,11 +138,12 @@ def masterSwitchHandler(evt) {
     log "Master switch ${evt.value}"
     
     if (evt.value == "on") {
-		// restore previously on switches
+		// restore previously on switches OR all switches if restoreStates is False
+		log "restoreStates is set to $restoreStates. (True = restore states; False = turn on all lights)."
 		bypassLinkedSwitchesSubscription {
 			switches.each { s -> 
 				def switchState = state.switchStates[s.deviceId.toString()]
-				if (switchState == "on") {
+				if (switchState == "on" || !restoreStates) {
 					log "Restore ${s.displayName} to on"
 					s.on()
 				}
