@@ -22,4 +22,7 @@ Use one master switch to control multiple linked switches.
 2. Click on _Add a new Master Switch_
 3. Choose the master switches
 4. Chose the linked switches
-5. Click _Done_
+5. Advanced Settings:
+    * Override display name: Set a custom name for the master switch
+    * Restore Previous Light States: True (restore light states) or False (turn all lights on regardless of previous state)
+6. Click _Done_
