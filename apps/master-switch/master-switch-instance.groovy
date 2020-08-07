@@ -49,9 +49,8 @@ def masterSwitch = [
 
 def restoreStates = [
 		name:				"restoreStates",
-		type:				"capability.switch",
+		type:				"bool",
 		title:				"Restore Previous Light States",
-		multiple:			false,
 		defaultValue:		true,
 		required:			true
 	]
@@ -84,7 +83,7 @@ preferences {
 		section ("<b>Advanced Settings</b>", hideable: true, hidden: true) {
 			paragraph "<br/><b>OPTIONAL:</b> Override the displayed name of the binding."
 			input nameOverride
-			paragraph "<br/>Remember/restore previous light states (TRUE) or always turn on all lights (FALSE)"
+			paragraph "<br/>Restore previous light states (TRUE) or always turn on all lights (FALSE)"
 			input restoreStates
 		}
 		section () {
