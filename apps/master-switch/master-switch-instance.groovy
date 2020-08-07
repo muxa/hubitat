@@ -1,5 +1,5 @@
 /**
- *  Master Switch v1.0.0
+ *  Master Switch v1.1.0
  *
  *  Copyright 2019 Mikhail Diatchenko (@muxa)
  * 
