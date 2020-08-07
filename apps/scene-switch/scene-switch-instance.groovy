@@ -1,7 +1,7 @@
 /**
- *  Scene Switch v1.0.1
+ *  Scene Switch v1.1.0
  *
- *  Copyright 2019 Mikhail Diatchenko (@muxa)
+ *  Copyright 2019-2020 Mikhail Diatchenko (@muxa)
  * 
  *  Based on Switch Bindings Instance code by Joel Wetzel
  *
@@ -74,6 +74,15 @@ def sceneSwitch = [
 		required:			true
 	]
 
+def sceneToggleDuration = [
+		name:				"sceneToggleDuration",
+		type:				"number",
+		title:				"Scene Toggle Duration (milliseconds)",
+        description:        "???",
+		defaultValue:		1000,
+		required:			true
+	]
+
 def nameOverride = [
 		name:				"nameOverride",
 		type:				"string",
@@ -97,11 +106,12 @@ preferences {
 		}
 		section("") {
 			input sceneSwitch
-			input switches0
+            paragraph "<b>WARINING:</b> do not include the Scene Switch in scenes"
+			input switches0            
 			input switches1
 			input switches2
-			input switches3
-			paragraph "<b>WARINING:</b> do not include the Scene Switch"
+			input switches3			
+            input sceneToggleDuration
 		}
 		section () {
 			input enableLogging
@@ -199,9 +209,12 @@ def applySwitchQueue(queue) {
 
 def activateScene(sceneNumber) {
 	log "Activate scene ${sceneNumber}"
+    
+    if (state.currentScene > 0)
+        state.lastUsedScene = state.currentScene
 
 	def previousScene = state.currentScene
-	state.currentScene = sceneNumber
+	state.currentScene = sceneNumber    
 
 	if (sceneNumber == 0) {
         
@@ -250,22 +263,37 @@ def sceneSwitchHandler(evt) {
     log "Scene switch ${evt.value}"
 
 	if (evt.value == "off") {
-		// if next scene is available then turn back on and activate scene
-		def nextScene = getNextScene()
-        log "Next scene: ${nextScene} (from ${state.currentScene})"
-		activateScene(nextScene)
-		if (nextScene == 0) {
-			// leave the scene switch off
-		} else {
-			// toggle scene switch back of for the next scene
-			bypassSceneSwitchSubscription {
-				sceneSwitch.on()
-			}
-		}
+        // record time when switched off to track if we switched it back in quckly to change scene
+        state.sceneSwitchLastOff = now()
+        runInMillis(sceneToggleDuration ?: 1000, 'delayedLinkedSwitchesOff')
 	} else {
-		// switch on first scene
-		activateScene(1)
+        // check if it's just on or should change scene
+        if (state.sceneSwitchLastOff) {
+            def offDurationMillis = now() - state.sceneSwitchLastOff            
+            if (offDurationMillis < (sceneToggleDuration ?: 1000)) {
+                // change scene
+                def nextScene = getNextScene()
+                if (nextScene == 0)
+                    nextScene = 1
+                log "Change scene to: ${nextScene} (from ${state.currentScene})"
+                activateScene(nextScene)
+                return
+            }
+        }
+        
+		// turn on last scene
+        def lastUsedScene = state.lastUsedScene ?: 1
+        log "Turn back on scene ${lastUsedScene}"
+		activateScene(lastUsedScene)
 	}
+}
+
+def delayedLinkedSwitchesOff() {    
+    if (sceneSwitch.currentValue("switch") == "off") {
+        // scene switch is still off (i.e it was not toggled back on to change the scene)
+        // turn off all the switches
+        activateScene(0)
+    }
 }
 
 def linkedSwitchHandler(evt) {    
