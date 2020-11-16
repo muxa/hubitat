@@ -1,6 +1,6 @@
 import groovy.json.JsonSlurper
 /**
- *  Garage Opener v1.0.0
+ *  Garage Opener v1.0.1
  *
  *  Copyright 2020 Mikhail Diatchenko (@muxa)
  *
@@ -328,9 +328,16 @@ def garageOpenContactHandler(evt) {
 
 def garageClosedContactHandler(evt) {    
     //logDebug "Garage closed contact event: ${evt.value}"
-    if (evt.value == 'closed' && atomicState.doorMoving) {
+    if (evt.value == 'closed') {
         log "${closedContact.label} detected that ${garageControl.label} is fully closed"
+        // set garage door control as "closed", regardless of how that happened
         garageControl.sendEvent(name: "door", value: "closed", descriptionText: "${closedContact.label} detected that ${garageControl.label} is fully closed")
+    } else if (evt.value == 'open') {
+        log "${closedContact.label} detected that ${garageControl.label} is opening"
+        // we know that the door is not fully closed, but we don't know if it's moving or not
+        // set garage control as "open" to indicate that it's no longer closed (instead of "opening" since setting it to "opening" would trigger the switch)
+        garageControl.sendEvent(name: "door", value: "open", descriptionText: "${closedContact.label} detected that ${garageControl.label} is not fully closed")
+        // TODO: set door controller state to "opening" and not toggle a switch
     }
 }
 
